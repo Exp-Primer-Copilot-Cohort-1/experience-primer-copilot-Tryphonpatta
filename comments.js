@@ -1,84 +1,42 @@
-//webserver
-var express = require('express');
-var router = express.Router();
-var mongoose = require('mongoose');
-var Comment = require('../models/Comment.js');
+//Create web server
+const express = require('express');
+const router = express.Router();
+const { Comment } = require("../models/Comment");
 
-//GET /comments
-//find all comments
-router.get('/', function(req, res, next) {
-  Comment.find(function(err, comments) {
-    if (err) return next(err);
-    res.json(comments);
-  });
+const { auth } = require("../middleware/auth");
+
+//=================================
+//             Comment
+//=================================
+
+router.post("/saveComment", auth, (req, res) => {
+    //Save the comment information into the DB
+    const comment = new Comment(req.body);
+
+    comment.save((err, comment) => {
+        if (err) return res.json({ success: false, err });
+
+        //If no error, get the comment information from the DB
+        Comment.find({ '_id': comment._id })
+            .populate('writer')
+            .exec((err, result) => {
+                if (err) return res.json({ success: false, err });
+                //If no error, send the comment information to the client
+                return res.status(200).json({ success: true, result });
+            })
+    })
 });
 
-//POST /comments
-//save new comment
-router.post('/', function(req, res, next) {
-  Comment.create(req.body, function(err, post) {
-    if (err) return next(err);
-    res.json(post);
-  });
-});
-
-//GET /comments/:id
-//find comment by id
-router.get('/:id', function(req, res, next) {
-  Comment.findById(req.params.id, function(err, post) {
-    if (err) return next(err);
-    res.json(post);
-  });
-});
-
-//PUT /comments/:id
-//update comment by id
-router.put('/:id', function(req, res, next) {
-  Comment.findByIdAndUpdate(req.params.id, req.body, function(err, post) {
-    if (err) return next(err);
-    res.json(post);
-  });
-});
-
-//DELETE /comments/:id
-//delete comment by id
-router.delete('/:id', function(req, res, next) {
-  Comment.findByIdAndRemove(req.params.id, req.body, function(err, post) {
-    if (err) return next(err);
-    res.json(post);
-  });
+//Get the comments for a specific video
+router.post("/getComments", (req, res) => {
+    //Get the comment information from the DB
+    Comment.find({ "postId": req.body.videoId })
+        .populate('writer')
+        .exec((err, comments) => {
+            if (err) return res.status(400).send(err);
+            //If no error, send the comment information to the client
+            res.status(200).json({ success: true, comments })
+        })
 });
 
 module.exports = router;
-
-// Path: comment.js
-//webserver
-var express = require('express');
-var router = express.Router();
-var mongoose = require('mongoose');
-var Comment = require('../models/Comment.js');
-
-//GET /comments
-//find all comments
-router.get('/', function(req, res, next) {
-  Comment.find(function(err, comments) {
-    if (err) return next(err);
-    res.json(comments);
-  });
-});
-
-//POST /comments
-//save new comment
-router.post('/', function(req, res, next) {
-  Comment.create(req.body, function(err, post) {
-    if (err) return next(err);
-    res.json(post);
-  });
-});
-
-//GET /comments/:id
-//find comment by id
-router.get('/:id', function(req, res, next) {
-  Comment.findById(req.params.id, function(err, post) {
-    if (err) return next(err);
-    res.json(post
